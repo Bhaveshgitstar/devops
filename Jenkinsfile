@@ -1,37 +1,34 @@
 pipeline {
-   agent any
-  
-   environment {
-       DOCKER_HUB_REPO = "bhaveshgitstar/flask-hello-world"
-       CONTAINER_NAME = "flask-hello-world"
- 
-   }
-  
-   stages {
-       /* We do not need a stage for checkout here since it is done by default when using the "Pipeline script from SCM" option. */
-      
- 
-       stage('Build') {
-           steps {
-               echo 'Building..'
-               sh 'docker image build -t $DOCKER_HUB_REPO:latest .'
-           }
-       }
-      //  stage('Test') {
-      //      steps {
-      //          echo 'Testing..'
-      //          sh 'docker stop $CONTAINER_NAME || true'
-      //          sh 'docker rm $CONTAINER_NAME || true'
-      //          sh 'docker run --name $CONTAINER_NAME $DOCKER_HUB_REPO /bin/bash -c "pytest test.py && flake8"'
-      //      }
-      //  }
-      //  stage('Deploy') {
-      //      steps {
-      //          echo 'Deploying....'
-      //          sh 'docker stop $CONTAINER_NAME || true'
-      //          sh 'docker rm $CONTAINER_NAME || true'
-      //          sh 'docker run -d -p 5000:5000 --name $CONTAINER_NAME $DOCKER_HUB_REPO'
-      //      }
-      //  }
-   }
+    agent any
+
+    environment {
+        DOCKER_HUB_REPO = "bhaveshgitstar/flask-hello-world"
+        CONTAINER_NAME = "friendly_ritchie"
+        DOCKER_USERNAME = "saumitra"
+        DOCKER_PASSWORD = "sid"
+    }
+
+    stages {
+        // Stage to log in to Docker Hub
+        stage('Login to Docker Hub') {
+            steps {
+                echo 'Logging into Docker Hub...'
+                
+                // Use Jenkins credentials to securely manage Docker Hub login details
+                withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    sh "echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin"
+                }
+            }
+        }
+
+        // Build Stage
+        stage('Build') {
+            steps {
+                echo 'Building Docker Image...'
+                // Build the Docker image and tag it with the latest tag
+                sh 'docker image build -t $DOCKER_HUB_REPO:latest .'
+            }
+        }
+
+    }
 }
