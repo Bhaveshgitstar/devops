@@ -1,33 +1,52 @@
 pipeline {
-    agent any
-
-    environment {
-        DOCKER_HUB_REPO = "bhaveshgitstar/flask-hello-world"
-        CONTAINER_NAME = "friendly_ritchie"
-        
+  agent any
+  stages {
+    stage('Build') {
+      steps {
+        echo "Building the repository"
+      }
     }
 
-    stages {
-        // Stage to log in to Docker Hub
-        stage('Login to Docker Hub') {
-            steps {
-                echo 'Logging into Docker Hub...'
-                
-                // Use Jenkins credentials to securely manage Docker Hub login details
-                withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                    sh "echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin"
-                }
-            }
-        }
-
-        // Build Stage
-        stage('Build') {
-            steps {
-                echo 'Building Docker Image...'
-                // Build the Docker image and tag it with the latest tag
-                sh 'docker image build -t $DOCKER_HUB_REPO:latest .'
-            }
-        }
-
+    stage('Test') {
+      steps {
+        echo "Running tests..."
+        sh 'python3 test_app.py'
+      }
     }
+
+    stage('Deploy') {
+      steps {
+        script {
+          // Pauses the pipeline for manual input
+          try {
+            input message: "Do you want to deploy the application?", ok: "Deploy"
+            echo "Deploying the application"
+          } catch (Exception e) {
+            echo "Deployment was skipped or failed due to input error."
+            currentBuild.result = 'ABORTED'  // Mark the build as aborted if input fails
+            throw e  // Rethrow to terminate the pipeline gracefully
+          }
+        }
+      }
+    }
+  }
+
+  post {
+    always {
+      echo 'The pipeline has completed'
+      junit allowEmptyResults: true, testResults: '**/test_reports/*.xml'
+    }
+    success {
+      sh '''
+        nohup python3 app.py > log.txt 2>&1 &
+      '''
+      echo "Flask application is up and running!"
+    }
+    failure {
+      echo 'The pipeline failed during execution'
+    }
+    aborted {
+      echo 'The deployment process was aborted.'
+    }
+  }
 }
