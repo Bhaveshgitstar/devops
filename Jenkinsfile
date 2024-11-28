@@ -4,8 +4,7 @@ pipeline {
     environment {
         DOCKER_HUB_REPO = "bhaveshgitstar/flask-hello-world"
         CONTAINER_NAME = "friendly_ritchie"
-        DOCKER_USERNAME = "saumitra"
-        DOCKER_PASSWORD = "sid"
+        
     }
 
     stages {
